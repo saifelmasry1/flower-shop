@@ -1,4 +1,4 @@
-# 🌸 Blossom & Bloom - Flower Shop
+# 🌸 THE GARDEN
 
 A beautiful, full-stack e-commerce flower shop application built with React and Node.js.
 
@@ -178,3 +178,4 @@ Created with passion for beautiful flowers and elegant code.
 ---
 
 **Happy Flower Shopping! 🌸**
+
