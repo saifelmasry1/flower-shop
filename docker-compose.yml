@@ -1,0 +1,64 @@
+version: "3.9"
+
+services:
+  # =======================
+  # MongoDB Database
+  # =======================
+  mongodb:
+    image: mongo:7                      # Use a fixed version of MongoDB
+    container_name: flower-shop-mongodb # Clear container name (easier in docker ps)
+    restart: always                     # Automatically restart if the container stops
+    ports:
+      - "27017:27017"                   # Expose MongoDB port for external access
+    volumes:
+      - mongodb_data:/data/db           # Persistent storage for MongoDB data
+    networks:
+      - flower-shop-network             # Shared network for all services
+
+  # =======================
+  # Backend (Node / Express)
+  # =======================
+  backend:
+    build: ./server                     # Build backend image from Dockerfile inside /server
+    container_name: flower-shop-backend
+    restart: always
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongodb:27017/flower-shop
+      # ⚠️ Note:
+      #   - "mongodb" here refers to the service name above
+      #   - This is the hostname Docker uses inside the shared network
+    depends_on:
+      - mongodb                         # Ensure MongoDB starts before backend
+    ports:
+      - "5000:5000"                     # Expose backend API on localhost:5000
+    networks:
+      - flower-shop-network
+
+  # =======================
+  # Frontend (React + Vite + Nginx)
+  # =======================
+  frontend:
+    build: ./client                     # Build frontend image from Dockerfile inside /client
+    container_name: flower-shop-frontend
+    restart: always
+    depends_on:
+      - backend                         # Frontend waits for backend to start
+    ports:
+      - "3000:80"                       # Access frontend at http://localhost:3000
+    networks:
+      - flower-shop-network
+
+# =======================
+# Shared Network
+# =======================
+networks:
+  flower-shop-network:
+    driver: bridge                      # Standard bridge network for communication
+
+# =======================
+# Volumes (Persistent DB Storage)
+# =======================
+volumes:
+  mongodb_data:

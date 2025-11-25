@@ -1,0 +1,29 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+
+# Docker
+*.log
+docker-volume/
+dockerdata/
+mongodb_data/
+
+# Environment vars
+.env
+server/.env
+client/.env
+
+# Vite
+client/node_modules/
+client/dist/
+
+# Logs
+logs/
+*.log
+
+# Other
+.DS_Store
+

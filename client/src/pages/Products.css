@@ -1,0 +1,140 @@
+.products-page {
+    width: 100%;
+    min-height: 100vh;
+}
+
+.products-hero {
+    background: var(--gradient-primary);
+    color: white;
+    padding: var(--spacing-2xl) 0;
+    text-align: center;
+}
+
+.page-title {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    margin-bottom: var(--spacing-sm);
+    color: white;
+}
+
+.page-subtitle {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.95);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.products-content {
+    background: white;
+}
+
+.filter-bar {
+    background: var(--neutral-50);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--spacing-2xl);
+}
+
+.filter-bar h3 {
+    font-size: 1.25rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--neutral-800);
+}
+
+.filter-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.products-grid {
+    display: grid;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+}
+
+.product-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.product-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--neutral-100);
+}
+
+.product-badge {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    z-index: 10;
+}
+
+.product-name {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-xs);
+    color: var(--neutral-900);
+    transition: color var(--transition-base);
+}
+
+.product-link:hover .product-name {
+    color: var(--primary-600);
+}
+
+.product-description {
+    color: var(--neutral-600);
+    flex: 1;
+    margin-bottom: var(--spacing-md);
+    line-height: 1.6;
+}
+
+.product-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--neutral-200);
+}
+
+.product-price {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--primary-600);
+}
+
+.product-footer .btn {
+    white-space: nowrap;
+}
+
+.no-products {
+    text-align: center;
+    padding: var(--spacing-3xl);
+    color: var(--neutral-600);
+    font-size: 1.125rem;
+}
+
+@media (max-width: 768px) {
+    .filter-bar {
+        padding: var(--spacing-md);
+    }
+
+    .filter-buttons {
+        gap: 0.5rem;
+    }
+
+    .filter-buttons .btn {
+        font-size: 0.75rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .product-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .product-footer .btn {
+        width: 100%;
+    }
+}

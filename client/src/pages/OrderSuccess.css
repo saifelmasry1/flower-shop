@@ -1,0 +1,238 @@
+.order-success-page {
+    width: 100%;
+    min-height: 100vh;
+}
+
+.success-hero {
+    background: var(--gradient-secondary);
+    color: white;
+    padding: var(--spacing-3xl) 0;
+    text-align: center;
+}
+
+.success-icon {
+    width: 100px;
+    height: 100px;
+    background: white;
+    color: var(--secondary-600);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    font-weight: 700;
+    margin: 0 auto var(--spacing-xl);
+    box-shadow: var(--shadow-xl);
+    animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0);
+    }
+
+    to {
+        transform: scale(1);
+    }
+}
+
+.success-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: var(--spacing-sm);
+    color: white;
+}
+
+.success-subtitle {
+    font-size: 1.25rem;
+    color: rgba(255, 255, 255, 0.95);
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.order-details {
+    background: var(--neutral-50);
+}
+
+.order-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.order-info,
+.customer-info,
+.shipping-info,
+.notes-info,
+.order-items {
+    padding: var(--spacing-xl);
+}
+
+.order-info h2,
+.customer-info h2,
+.shipping-info h2,
+.notes-info h2,
+.order-items h2 {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-lg);
+    color: var(--neutral-900);
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid var(--neutral-200);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-label {
+    color: var(--neutral-600);
+    font-weight: 600;
+}
+
+.info-value {
+    color: var(--neutral-900);
+    font-weight: 600;
+    text-align: right;
+}
+
+.total-amount {
+    font-size: 1.5rem;
+    color: var(--primary-600);
+    font-weight: 700;
+}
+
+.address-text,
+.notes-text {
+    color: var(--neutral-700);
+    line-height: 1.8;
+    margin: 0;
+}
+
+.order-items {
+    grid-column: 1 / -1;
+    margin-bottom: var(--spacing-xl);
+}
+
+.items-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: var(--neutral-50);
+    border-radius: var(--radius-md);
+}
+
+.order-item-info h3 {
+    font-size: 1.125rem;
+    margin: 0 0 0.25rem 0;
+    color: var(--neutral-900);
+}
+
+.order-item-info p {
+    color: var(--neutral-600);
+    margin: 0;
+    font-size: 0.9375rem;
+}
+
+.order-item-price {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-600);
+}
+
+.items-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) 0;
+    border-top: 2px solid var(--neutral-300);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.items-total span:last-child {
+    color: var(--primary-600);
+}
+
+.success-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    margin-bottom: var(--spacing-2xl);
+    flex-wrap: wrap;
+}
+
+.success-message {
+    background: white;
+    padding: var(--spacing-2xl);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+}
+
+.success-message h3 {
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    color: var(--neutral-900);
+}
+
+.next-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-xl);
+}
+
+.step {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: start;
+}
+
+.step-icon {
+    font-size: 3rem;
+    flex-shrink: 0;
+}
+
+.step-content h4 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: var(--neutral-900);
+}
+
+.step-content p {
+    color: var(--neutral-600);
+    line-height: 1.6;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .order-details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .success-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .success-actions .btn {
+        width: 100%;
+    }
+
+    .next-steps {
+        grid-template-columns: 1fr;
+    }
+}
