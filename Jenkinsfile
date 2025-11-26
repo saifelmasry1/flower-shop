@@ -61,7 +61,7 @@ pipeline {
                   kubectl apply -f k8s/flower-shop-app-node.yaml -n $K8S_NAMESPACE
 
                   kubectl rollout restart deployment flower-shop-frontend -n $K8S_NAMESPACE
-                  kubectl rollout restart deployment flower-shop-backend  -n $K8S_NAMESPACE
+                  kubectl rollout restart deployment backend -n $K8S_NAMESPACE
                 '''
             }
         }
