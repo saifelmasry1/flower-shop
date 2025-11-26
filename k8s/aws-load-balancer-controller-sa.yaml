@@ -5,3 +5,5 @@ metadata:
   namespace: kube-system
   annotations:
     eks.amazonaws.com/role-arn: arn:aws:iam::163511166008:role/AWSLoadBalancerControllerRole
+
+#kubectl apply -f aws-load-balancer-controller-sa.yaml

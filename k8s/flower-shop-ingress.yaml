@@ -21,3 +21,9 @@ spec:
                 name: flower-shop-frontend
                 port:
                   number: 80
+
+
+# #تأكد:
+
+# kubectl get pods -n kube-system | grep aws-load-balancer-controller
+# لازم تلاقي Pod(s) في حالة Running.

@@ -15,9 +15,18 @@ resource "aws_security_group" "bastion_sg" {
   description = "Security group for bastion host"
   vpc_id      = module.vpc.vpc_id
 
+  # SSH
   ingress {
     from_port   = 22
     to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.bastion_allowed_cidr]
+  }
+
+  # Jenkins HTTP (8080)
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = [var.bastion_allowed_cidr]
   }
@@ -35,11 +44,11 @@ resource "aws_security_group" "bastion_sg" {
 }
 
 ###########################################
-# 🔐 Attach EKS Access Policy - الحل المؤقت المضمون (AdministratorAccess)
+# 🔐 Attach EKS Access Policy -  (AdministratorAccess)
 ###########################################
 resource "aws_iam_role_policy_attachment" "bastion_eks_access" {
   role = aws_iam_role.bastion_role.name
-  # ✅ الحل النهائي: استخدام AdministratorAccess للسماح بالوصول الكامل
+  #AdministratorAccess
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 ############################################################
@@ -94,7 +103,7 @@ resource "aws_iam_instance_profile" "bastion_profile" {
 locals {
   user_data = <<-EOF
     #!/bin/bash
-    set -xe
+    set -x
 
     #########################################
     # 1) Update system and install basics
@@ -138,12 +147,37 @@ locals {
     sudo /usr/local/bin/aws eks update-kubeconfig \
       --name ${var.cluster_name} \
       --region ${var.region} \
-      --kubeconfig /home/ubuntu/.kube/config
+      --kubeconfig /home/ubuntu/.kube/config || echo "eks update-kubeconfig failed, will do it manually later"
 
     sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
 
     #########################################
-    # 6) Cleanup
+    # 6) Install Docker
+    #########################################
+    sudo apt-get update -y
+    sudo apt-get install -y docker.io
+
+    sudo systemctl enable docker
+    sudo systemctl start docker
+
+    # Allow ubuntu user to use docker without sudo
+    sudo usermod -aG docker ubuntu
+
+    #########################################
+    # 7) Run Jenkins container
+    #########################################
+    sudo mkdir -p /opt/jenkins_home
+    sudo chown -R ubuntu:ubuntu /opt/jenkins_home
+
+    sudo docker run -d \
+      --name jenkins \
+      --restart=always \
+      -p 8080:8080 \
+      -v /opt/jenkins_home:/var/jenkins_home \
+      jenkins/jenkins:lts-jdk17
+
+    #########################################
+    # 8) Cleanup
     #########################################
     sudo apt-get autoremove -y
     sudo apt-get clean
@@ -160,10 +194,10 @@ resource "aws_instance" "bastion" {
   vpc_security_group_ids      = [aws_security_group.bastion_sg.id]
   associate_public_ip_address = true
 
-  key_name             = var.bastion_key_name
-  iam_instance_profile = aws_iam_instance_profile.bastion_profile.name
-  user_data            = local.user_data
-
+  key_name                    = var.bastion_key_name
+  iam_instance_profile        = aws_iam_instance_profile.bastion_profile.name
+  user_data                   = local.user_data
+  user_data_replace_on_change = true
   tags = {
     Name    = "bastion-host"
     Project = "flower-shop"
