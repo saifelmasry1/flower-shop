@@ -1,0 +1,417 @@
+# حابب اوثق اللي حصل من اول ازاي اختبر ال frontend, backend
+# و ازاي اعمل seeding في تقرير مفصل كده عشان احفظه على جنب 
+# و ازاي موضوع “أفتح الـ app ألاقيه زي ما كان شغال محلي” اتحل خلاص 10/10 ✨
+
+# 🌸 Flower Shop App – توثيق تشغيل واختبار الـ Frontend / Backend والـ Seeding
+# 1. نظرة عامة سريعة
+
+# الـ App بتاعنا مكوّن من 3 طبقات:
+
+# Frontend
+
+# React + Vite
+
+# بيتبني كـ static files وبيتقدم عن طريق Nginx
+
+# شغال في Kubernetes Deployment
+
+# Service اسمه: flower-shop-frontend على بورت 80
+
+# Backend
+
+# Node.js + Express
+
+# بيقدم API على بورت 5000
+
+# أهم endpoint:
+
+# GET /api/products → بيرجع لستة المنتجات من MongoDB
+
+# Service اسمه: backend على بورت 5000
+
+# MongoDB
+
+# Image: mongo:7
+
+# Service اسمه: mongodb على بورت 27017
+
+# Database: flower-shop
+
+# Collection: products
+
+# الـ Cluster شغال على EKS + Fargate، وبدخل عليه عن طريق Bastion Host معمول بـ Terraform.
+# الـ Docker images متخزنة في AWS ECR:
+
+# 163511166008.dkr.ecr.us-east-1.amazonaws.com/flower-shop-frontend:latest
+
+# 163511166008.dkr.ecr.us-east-1.amazonaws.com/flower-shop-backend:latest
+
+# 2. اختبار الـ Backend جوّه الـ Cluster
+# 2.1 التأكد إن الـ Pods شغّالة
+
+# على الباستيون:
+
+# kubectl get pods -n flower-shop
+
+
+# نتيجة متوقعة (أمثلة):
+
+# NAME                                  READY   STATUS    RESTARTS   AGE
+# backend-59fb4f88d5-88khn              1/1     Running   0          16m
+# flower-shop-frontend-7dd57d99-dp6d9   1/1     Running   0          16m
+# mongodb-855c85f5d6-7ljkx              1/1     Running   0          16m
+
+# 2.2 إنشاء Pod مؤقت للاختبار – curl-test
+
+# مرّة واحدة:
+
+# kubectl run curl-test -n flower-shop \
+#   --image=public.ecr.aws/amazonlinux/amazonlinux:2 \
+#   --command -- sleep 3600
+
+
+# بعدها:
+
+# kubectl exec -it -n flower-shop curl-test -- sh
+
+# 2.3 اختبار backend Service من جوّه الكلاستر
+
+# جوه الـ pod:
+
+# curl http://backend:5000/api/products
+
+
+# لو الـ seeding متعملش → هترجع []
+# لو فيه بيانات → هترجع JSON فيه كل المنتجات.
+
+# ده بيأكد:
+
+# Service backend شغّال
+
+# DNS جوّه الكلاستر مظبوط
+
+# الـ Pod بتاع الباك إند شغال وبيسمع على 5000
+
+# 3. اختبار الـ Backend من اللابتوب
+
+# الهدف: أضرب /api/products من على اللابتوب كأنها خدمة خارجية.
+
+# 3.1 port-forward للـ backend من الباستيون
+
+# على الباستيون:
+
+# kubectl port-forward -n flower-shop svc/backend 5000:5000
+
+
+# سيب الترمينال ده مفتوح.
+
+# 3.2 SSH من اللابتوب مع Tunnel للبورت 5000
+
+# على اللابتوب:
+
+# ssh -i azza.pem \
+#   -L 5000:127.0.0.1:5000 \
+#   ubuntu@<BASTION_PUBLIC_DNS>
+
+
+# مثال: ubuntu@ec2-3-83-36-52.compute-1.amazonaws.com
+
+# 3.3 اختبار الـ API من اللابتوب
+
+# في ترمينال تاني على اللابتوب:
+
+# curl http://127.0.0.1:5000/api/products
+
+
+# لازم يرجّع نفس الـ JSON اللي شوفناه من جوّه الكلاستر.
+# كده تأكدنا إن:
+
+# Port-forward شغال
+
+# SSH tunnel شغال
+
+# نقدر نختبر الـ Backend من برّه بسهولة.
+
+# 4. اختبار الـ Frontend جوّه الكلاستر ومن اللابتوب
+# 4.1 اختبار Service من جوّه الكلاستر (اختياري)
+
+# من جوّه curl-test:
+
+# curl http://flower-shop-frontend
+
+
+# هترجع HTML بتاع الـ React app (index.html).
+
+# 4.2 port-forward للـ Frontend من الباستيون
+
+# على الباستيون:
+
+# kubectl port-forward -n flower-shop svc/flower-shop-frontend 3000:80
+
+
+# سيبه مفتوح.
+
+# 4.3 SSH من اللابتوب مع Tunnel للبورت 3000
+
+# إمّا تستخدم command مستقل:
+
+# ssh -i azza.pem \
+#   -L 3000:127.0.0.1:3000 \
+#   ubuntu@<BASTION_PUBLIC_DNS>
+
+
+# أو تجمع الاتنين (frontend + backend) في مرة واحدة:
+
+# ssh -i azza.pem \
+#   -L 3000:127.0.0.1:3000 \
+#   -L 5000:127.0.0.1:5000 \
+#   ubuntu@<BASTION_PUBLIC_DNS>
+
+# 4.4 فتح الـ Frontend من المتصفح
+
+# على اللابتوب افتح:
+
+# http://127.0.0.1:3000
+
+
+# صفحة الـ Home تشتغل
+
+# روح على /products:
+
+# http://127.0.0.1:3000/products
+
+
+# لو الـ backend فيه داتا، هتشوف كروت المنتجات كلها.
+
+# 4.5 التحقق من إن الـ Frontend بيكلم الـ Backend صح
+
+# افتح DevTools → Network → فعل Disable cache
+# اعمل Reload للصفحة /products.
+
+# تتوقع تشوف request اسمه تقريبًا:
+
+# GET /api/products  → Status: 200
+
+
+# وده معناه إن:
+
+# React بيطلب /api/products
+
+# Nginx في frontend بيعمل proxy لده على http://backend:5000
+
+# الـ backend بيرجع JSON من Mongo
+
+# React بيرندر الكروت.
+
+# 5. ازاي بنعمل Seeding لـ MongoDB جوّه الـ Cluster
+# 5.1 إنشاء Pod مؤقت فيه Mongo tools
+
+# على الباستيون:
+
+# kubectl run mongo-client -n flower-shop \
+#   --image=mongo:7 \
+#   --command -- sleep 3600
+
+
+# اتأكد إنه Running:
+
+# kubectl get pods -n flower-shop
+
+# 5.2 الدخول على Mongo من جوّه البود
+# kubectl exec -it -n flower-shop mongo-client -- mongosh "mongodb://mongodb:27017/flower-shop"
+
+
+# هتوصل لـ prompt بتاع mongosh:
+
+# flower-shop>
+
+# 5.3 سكريبت الـ seeding – إدخال 12 منتج
+
+# نفّذ الأمر ده بالكامل جوّه mongosh:
+
+# db.products.deleteMany({});
+
+# db.products.insertMany([
+#   {
+#     name: "Tropical Paradise",
+#     price: 82.99,
+#     category: "Tropical",
+#     description: "Exotic tropical flowers including birds of paradise, orchids, and anthuriums.",
+#     image: "/images/tropical-flowers.png",
+#     imageUrl: "/images/tropical-flowers.png",
+#     featured: true,
+#     inStock: true
+#   },
+#   {
+#     name: "Spring Tulip Mix",
+#     price: 48.99,
+#     category: "Tulips",
+#     description: "Colorful assortment of tulips in red, yellow, pink, and white.",
+#     image: "/images/tulip-mix.png",
+#     imageUrl: "/images/tulip-mix.png",
+#     featured: false,
+#     inStock: true
+#   },
+#   {
+#     name: "Autumn Harvest Bouquet",
+#     price: 54.99,
+#     category: "Bouquet",
+#     description: "Warm autumn tones featuring orange roses and carnations.",
+#     image: "/images/autumn-bouquet.png",
+#     imageUrl: "/images/autumn-bouquet.png",
+#     featured: false,
+#     inStock: true
+#   },
+#   {
+#     name: "Spring Tulip Arrangement",
+#     price: 46.99,
+#     category: "Tulips",
+#     description: "Vibrant pink and white tulips arranged in a clear vase.",
+#     image: "/images/spring-tulips.png",
+#     imageUrl: "/images/spring-tulips.png",
+#     featured: true,
+#     inStock: true
+#   },
+#   {
+#     name: "Sunny Day Sunflowers",
+#     price: 44.99,
+#     category: "Sunflowers",
+#     description: "Cheerful sunflower bouquet to brighten anyone's day.",
+#     image: "/images/sunflowers.png",
+#     imageUrl: "/images/sunflowers.png",
+#     featured: true,
+#     inStock: true
+#   },
+#   {
+#     name: "Elegant Orchid Plant",
+#     price: 59.99,
+#     category: "Orchids",
+#     description: "Sophisticated white and purple orchids in a ceramic pot.",
+#     image: "/images/orchids.png",
+#     imageUrl: "/images/orchids.png",
+#     featured: false,
+#     inStock: true
+#   },
+#   {
+#     name: "Wildflower Meadow Mix",
+#     price: 38.99,
+#     category: "Wildflowers",
+#     description: "Rustic mix of colorful wildflowers for a natural look.",
+#     image: "/images/wildflowers.png",
+#     imageUrl: "/images/wildflowers.png",
+#     featured: false,
+#     inStock: true
+#   },
+#   {
+#     name: "Pure White Lilies",
+#     price: 55.99,
+#     category: "Lilies",
+#     description: "Elegant white lilies symbolizing purity and grace.",
+#     image: "/images/white-lilies.png",
+#     imageUrl: "/images/white-lilies.png",
+#     featured: false,
+#     inStock: true
+#   },
+#   {
+#     name: "Romantic Pink Roses",
+#     price: 52.99,
+#     category: "Roses",
+#     description: "Soft pink roses, perfect for romantic occasions.",
+#     image: "/images/pink-roses.png",
+#     imageUrl: "/images/pink-roses.png",
+#     featured: false,
+#     inStock: true
+#   },
+#   {
+#     name: "Lavender Dreams",
+#     price: 41.99,
+#     category: "Lavender",
+#     description: "Calming lavender bouquet with greenery.",
+#     image: "/images/lavender.png",
+#     imageUrl: "/images/lavender.png",
+#     featured: false,
+#     inStock: false
+#   },
+#   {
+#     name: "Garden Rose Delight",
+#     price: 57.99,
+#     category: "Roses",
+#     description: "Lush garden roses in pastel tones.",
+#     image: "/images/garden-roses.png",
+#     imageUrl: "/images/garden-roses.png",
+#     featured: false,
+#     inStock: true
+#   },
+#   {
+#     name: "Classic Red Roses",
+#     price: 62.99,
+#     category: "Roses",
+#     description: "12 premium red roses bouquet.",
+#     image: "/images/red-roses.png",
+#     imageUrl: "/images/red-roses.png",
+#     featured: true,
+#     inStock: true
+#   }
+# ]);
+
+
+# تأكيد إن الداتا اتضافت:
+
+# db.products.countDocuments();   // لازم ترجع 12
+
+
+# اكتب:
+
+# exit
+
+
+# لحد ما ترجع للـ shell العادي.
+
+# 5.4 مسح الـ mongo-client pod (تنضيف)
+# kubectl delete pod -n flower-shop mongo-client
+
+# 6. ليه دلوقتي الـ App بقى “زي ما كان شغال محلي”؟
+
+# زمان محليًا كنت بتشغل:
+
+# docker compose up
+
+
+# Mongo بتقوم
+
+# backend بيخدم /api/products (يا إما static أو من Mongo)
+
+# frontend بيجيب /api/products، يعرض 12 كارت بنفس الصور
+
+# علشان نوصل لنفس الشكل على EKS عملنا الآتي:
+
+# بنينا نفس الـ Docker images للـ frontend/backend
+# ورفعناهم على ECR.
+
+# كتبنا Kubernetes manifests:
+
+# Deployments لـ backend, mongodb, flower-shop-frontend
+
+# Services بأسماء ثابتة (backend, mongodb, flower-shop-frontend)
+
+# الـ frontend Nginx عامل proxy على http://backend:5000 لكل /api/.
+
+# سيّدنا نفس الـ products في Mongo جوّه الكلاستر
+# بنفس الـ fields والـ image paths اللي كانت في النسخة المحلية.
+
+# الصور موجودة جوّه frontend image
+# في public/images/*.png → بتتبني وتتبعت إلى /images/...
+# وعشان كده قيم imageUrl في Mongo هي /images/....
+
+# فتحنا الـ app من برّه بنفس الشكل عن طريق:
+
+# kubectl port-forward من الباستيون
+
+# SSH tunnels من اللابتوب
+
+# زيارة http://127.0.0.1:3000/products
+
+# فالنتيجة النهائية:
+
+# نفس الكروت، نفس الصور، نفس الأسعار والوصف →
+# سواء شغّلت docker compose up محلي، أو شغّلت الـ Cluster على EKS.

@@ -1,0 +1,146 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flower-shop
+---
+# MongoDB
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  namespace: flower-shop
+  labels:
+    app: mongodb
+spec:
+  type: ClusterIP
+  selector:
+    app: mongodb
+  ports:
+    - name: mongo
+      port: 27017
+      targetPort: 27017
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb
+  namespace: flower-shop
+  labels:
+    app: mongodb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7
+          ports:
+            - containerPort: 27017
+          args:
+            - --bind_ip_all
+---
+# Backend (Node/Express)
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: flower-shop
+  labels:
+    app: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: flower-shop
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: 163511166008.dkr.ecr.us-east-1.amazonaws.com/flower-shop-backend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          env:
+            - name: PORT
+              value: "5000"
+            - name: NODE_ENV
+              value: "production"
+            - name: MONGODB_URI
+              value: "mongodb://mongodb:27017/flower-shop"
+---
+# Frontend (React + Nginx)
+apiVersion: v1
+kind: Service
+metadata:
+  name: flower-shop-frontend
+  namespace: flower-shop
+  labels:
+    app: flower-shop-frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: flower-shop-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flower-shop-frontend
+  namespace: flower-shop
+  labels:
+    app: flower-shop-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flower-shop-frontend
+  template:
+    metadata:
+      labels:
+        app: flower-shop-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: 163511166008.dkr.ecr.us-east-1.amazonaws.com/flower-shop-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+
+
+#💪💪
+# ملاحظات مهمة:
+# - تأكد إن الـ ECR Public access مفعل على الـ repositories بتوع الـ frontend والـ backend.
+# # - لو عملت تحديث على أي صورة من الصور دي، لازم تعيد بناء الصورة، تدفعها على الـ ECR،
+# #   وبعدين تعمل
+# # kubectl apply -f flower-shop-app-node.yaml
+
+# # kubectl get pods -n flower-shop
+# # kubectl get svc -n flower-shop

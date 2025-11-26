@@ -1,0 +1,146 @@
+# # خطوات ربط الـ Bastion بكلاستر EKS البرايفت بعد أي terraform apply
+# # (تتنفّذ كلها من جوّه الباستيون)
+
+# cluster:
+#   name: flower-shop-cluster
+#   region: us-east-1
+#   bastion_role_name: bastion-role
+
+# steps:
+
+#   - step: 1
+#     title: "دخول كـ IAM Admin مرة واحدة (bootstrap)"
+#     description: >
+#       الخطوة دي بس علشان نقدر نعدّل aws-auth ونضيف bastion-role جوّه الكلاستر.
+#       بتتعمل بعد ما الكلاستر يقوم بالـ Terraform.
+#     commands:
+#    💪💪   - "# على الباستيون:"
+#       - aws configure
+
+
+#       - "# حط AWS Access Key / Secret بتوع اليوزر admin (مثلاً terraform)"
+#       -%%$$ aws sts get-caller-identity &&%%$$
+#       - "# تأكد إن Arn فيه user/terraform مش assumed-role/bastion-role"
+
+#   - step: 2
+#     title: "تحديث kubeconfig بهويّة الـ admin"
+#     commands:
+#       - aws eks update-kubeconfig --name flower-shop-cluster --region us-east-1
+# incase kubeconfig not found:
+
+#description of the issue:
+# The connection to the server localhost:8080 was refused
+# ده طبيعي جدًا في الحالة دي، معناه بس إن kubectl ملقاش kubeconfig صح، فافترض إنه هيكلم Kubernetes على localhost:8080، وده مش موجود.
+
+# بعد ما نعدّل الصلاحيات ونشغّل aws eks update-kubeconfig المفروض يختفي خالص. 🟢
+# #       please run: the below commands      ############
+# # ##sudo mkdir -p /home/ubuntu/.kube
+# # sudo chown -R ubuntu:ubuntu /home/ubuntu/.kube
+# # aws eks update-kubeconfig --name flower-shop-cluster --region us-east-1
+# # #       - kubectl get pods -A
+# kubectl get nodes
+#       - "# لو مفيش نودز (Fargate) عادي ممكن يطلع No resources found"
+
+#   - step: 3
+#     title: "تعديل aws-auth لإضافة bastion-role كـ system:masters"
+#     description: >
+#       الهدف إن أي توكن جاي من IAM Role bastion-role يبقى ليه صلاحيات admin جوّه الكلاستر.
+#     commands:
+#       - kubectl edit configmap aws-auth -n kube-system
+#       - |
+#         # جوّه الملف اللي هيفتح، دور على:
+#         #   mapRoles: |
+#         # وتحت آخر role موجود، ضيف البلوك ده (بنفس الـ indent):
+
+#         - rolearn: arn:aws:iam::163511166008:role/bastion-role
+#           username: bastion-admin
+#           groups:
+#             - system:masters
+
+#       - "# احفظ واخرج (:wq في vi/vim)"
+##################################################
+# إذا كنت تستخدم Vim (محرر قوي وشائع):
+# تأكد أنك في وضع الأوامر (Command Mode) بالضغط على مفتاح Esc.
+
+# اضغط على مفتاح g مرتين (أي gg) للانتقال إلى السطر الأول.
+
+# اكتب الأمر التالي: dG
+
+# الأمر dG يقوم بحذف كل شيء من السطر الحالي إلى نهاية الملف.
+ex
+###################################################3
+#   - step: 4
+#     title: "مسح كريدنشالز الـ admin من الباستيون"
+#     description: >
+#       من دلوقتي وطالع عايزين نشتغل بهويّة EC2 instance profile (bastion-role) بس.
+#     commands:
+#       - rm -f ~/.aws/credentials
+#       - rm -f ~/.aws/config
+#       - aws sts get-caller-identity
+#       - "# المفروض Arn يبقى: arn:aws:sts::...:assumed-role/bastion-role/..."
+
+#   - step: 5
+#     title: "تحديث kubeconfig بهويّة bastion-role والتأكد إن الـ Access شغال"
+#     commands:
+#       - aws eks update-kubeconfig --name flower-shop-cluster --region us-east-1
+#       - kubectl get nodes
+#       - kubectl get pods -A
+#       - "# لو الأوامر دي اشتغلت من غير Error, يبقى الباستيون بقى Admin على الكلاستر."
+
+# notes:
+#   - >
+#     لو عملت terraform destroy && terraform apply:
+#       1) استنى الكلاستر يخلص إنشاء.
+#       2) ssh على الباستيون.
+#       3) كرر الخطوات من Step 1 لحد Step 5 زي ما هي من الملف ده.
+#   - >
+#     البلوك الوحيد الثابت هو bastion-role, لأن ARN بتاعه ثابت طول ما انت
+#     ما غيرتش اسم الـ role في Terraform.
+#     الـ Fargate roles ممكن Arnold بتاعها يتغير مع إعادة الإنشاء، فسيبها للـ Terraform/module
+#     يتعامل معاها، وإنت بس ركّز على إضافة bastion-role.
+
+
+
+# 🎯 طريقة الاستخدام العملي (مختصرة)
+
+# كل ما تعمل:
+
+# terraform destroy
+# terraform apply
+
+
+# وتلاقي الكلاستر اشتغل، تعمل من على الباستيون:
+
+# Step 1 + 2 من الملف
+
+# aws configure بهويّة admin (يوزر terraform)
+
+# aws eks update-kubeconfig ...
+
+# kubectl get nodes
+
+# Step 3
+
+# kubectl edit configmap aws-auth -n kube-system
+
+# تحت mapRoles: | زوّد:
+
+# - rolearn: arn:aws:iam::163511166008:role/bastion-role
+#   username: bastion-admin
+#   groups:
+#     - system:masters
+
+
+# Step 4 + 5
+
+# امسح ~/.aws/credentials و ~/.aws/config
+
+# تأكد إن aws sts get-caller-identity رجع assumed-role/bastion-role
+
+# aws eks update-kubeconfig ...
+
+# kubectl get pods -A
+
+# خلاص، كده الكلاستر private،
+# والـ access ليه من الباستيون فقط،
+# والـ bastion-role admin جوّه EKS.
