@@ -415,3 +415,15 @@
 
 # نفس الكروت، نفس الصور، نفس الأسعار والوصف →
 # سواء شغّلت docker compose up محلي، أو شغّلت الـ Cluster على EKS.
+
+
+mkdir -p /opt/jenkins_home
+chown 1000:1000 /opt/jenkins_home || true  
+
+  docker run -d \
+  --name jenkins \
+  --restart=always \
+  -p 8080:8080 \
+  -v /opt/jenkins_home:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  jenkins/jenkins:lts-jdk17 || true

@@ -103,7 +103,7 @@ resource "aws_iam_instance_profile" "bastion_profile" {
 locals {
   user_data = <<-EOF
     #!/bin/bash
-    set -x
+    set -xe
 
     #########################################
     # 1) Update system and install basics
@@ -160,22 +160,41 @@ locals {
     sudo systemctl enable docker
     sudo systemctl start docker
 
-    # Allow ubuntu user to use docker without sudo
-    sudo usermod -aG docker ubuntu
+    # Add ubuntu user to docker group
+    sudo usermod -aG docker ubuntu || true
+
+    # Give docker socket permissions
+    sudo chmod 666 /var/run/docker.sock
 
     #########################################
     # 7) Run Jenkins container
     #########################################
-    sudo mkdir -p /opt/jenkins_home
-    sudo chown -R ubuntu:ubuntu /opt/jenkins_home
+    AWS_ACCOUNT_ID=163511166008
+    AWS_REGION=us-east-1
+    ECR_REPO=jenkins-eks
 
-    sudo docker run -d \
+    # Login ECR
+    aws ecr get-login-password --region $AWS_REGION | \
+      docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+    # ---------------------------------------------------
+    # [Very Important Step] Prepare the folder and its permissions
+    # ---------------------------------------------------
+    # Create the folder on the host
+    sudo mkdir -p /opt/jenkins_home
+    
+    # Change the owner to 1000 (jenkins user)
+    # This will solve the Permission denied issue
+    sudo chown -R 1000:1000 /opt/jenkins_home
+
+    # Run Jenkins
+    docker run -d \
       --name jenkins \
       --restart=always \
       -p 8080:8080 \
       -v /opt/jenkins_home:/var/jenkins_home \
-      jenkins/jenkins:lts-jdk17
-
+      -v /var/run/docker.sock:/var/run/docker.sock \
+      $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:latest
     #########################################
     # 8) Cleanup
     #########################################
@@ -189,7 +208,7 @@ locals {
 ############################################################
 resource "aws_instance" "bastion" {
   ami                         = local.ubuntu_2204_ami
-  instance_type               = "t3.micro"
+  instance_type               = "t3.medium"
   subnet_id                   = module.vpc.public_subnets[0]
   vpc_security_group_ids      = [aws_security_group.bastion_sg.id]
   associate_public_ip_address = true
